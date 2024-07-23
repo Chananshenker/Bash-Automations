@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#author: chanan shenker.
+#linkedin: https://www.linkedin.com/in/chanan-shenker-a00481316/
+#github: https://github.com/Chananshenker/Bash-Automations
+#this is a bash automation that uses IOC files that contain malicious domains/IPs, strings, import hashes and sha256 to check the pcap file for any malicious activity. 
+
 PCAP_FILE=""
 MAL_DOMAINS_FILE=""
 MAL_STR_FILE=""
@@ -16,6 +21,7 @@ options:
 DIR=$(mktemp -d ./PR_results_XXX)
 TIME=$(date +"%Y-%m-%d %H:%M:%S")
 
+#sorting and cheking for flags and arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -f) PCAP_FILE="$2"; shift ;;
@@ -29,6 +35,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+#checking the argument if they are valid and usable.
 function ARG_CHECK(){
 	PCAP_CHECK=$(file "$PCAP_FILE" | grep -oE 'pcap capture file|pcapng capture file')
 	if [ "$PCAP_FILE" == '' ];then
@@ -78,6 +85,7 @@ function ARG_CHECK(){
 
 ARG_CHECK
 
+#creating a yara rule and cheking the file that were extracted.
 function MAL_STR_SCAN(){
 	echo -e "\n {+} Checking files for malicious strings with yara."
 	STR_YARA_RULE=$(mktemp -t XXXXX.yar)
@@ -100,6 +108,7 @@ function MAL_STR_SCAN(){
 	fi
 }
 
+#creating a yara rule and cheking the file that were extracted.
 function IMPHASH_SCAN(){
 	echo " {+} Cheking files for malicious import hashes with yara."
 	IMP_YARA_RULE=$(mktemp -t XXXXX.yar)
@@ -124,6 +133,7 @@ function IMPHASH_SCAN(){
 	fi
 }
 
+#creating a yara rule and cheking the file that were extracted.
 function SHA256_SCAN(){
 	echo " {+} Cheking files for malicious sha256 hashes with yara."
 	SHA256_YARA_RULE=$(mktemp -t XXXXX.yar)
@@ -149,7 +159,7 @@ function SHA256_SCAN(){
 	fi
 }
 
-
+#using tshark to extract all file that were downloaded on HTTP
 function FILE_EXPORTING(){
 	echo -e "\n {+} if any, extracting all files downloaded on HTTP:\n"
 	tshark -r "$PCAP_FILE" -q --export-objects http,"$DIR"/Extracted_files 2>/dev/null
@@ -171,6 +181,7 @@ function FILE_EXPORTING(){
 	fi
 }
 
+#doing a simple read and creating a log of all domains that were visited, by whom and at what time.
 function NO_ARGS_READ(){
 	touch "$DIR"/hosts_accessed.log
 	echo -e "run time: "$TIME" \n	~/ Pcap reader - Malicious domains & files \~ \n"
@@ -186,6 +197,8 @@ function NO_ARGS_READ(){
 	FILE_EXPORTING
 }
 
+
+#does the same as the NO_ARGS_READ but cheicks the visited domians via the IOC file
 function ARGS_READ(){
 	TIME=$(date +"%Y-%m-%d %H:%M:%S")
 	touch "$DIR"/hosts_accessed.log

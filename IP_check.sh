@@ -12,7 +12,6 @@ GREAYNOISE_API_KEY='<YOUR_API_KEY_HERE>'
 
 INPUT="$1"
 
-
 function IP_FILE(){
       for IP in $(cat "$INPUT");do
             echo -e "\n${CYAN}results for ${IP}:${RESET}\n\nVirusTotal:"
@@ -29,12 +28,18 @@ function IP_FILE(){
             echo -e "  clean score: ${AID_SCORE}"
 
             echo -e "\nGreynoise:"
-            GREAYNOISE_RES=$(curl -s -H "key: ${GREAYNOISE_API_KEY}" "https://api.greynoise.io/v3/community/${IP}" | grep -vE "{|}" | sed 's/"//g ; s/,//g')
-            echo "$GREAYNOISE_RES"
+            GREAYNOISE_SCORE=$(curl -s -H "key: ${GREAYNOISE_API_KEY}" "https://api.greynoise.io/v3/community/${IP}" | grep -vE "{|}" | sed 's/"//g ; s/,//g')
+            echo "$GREAYNOISE_SCORE"
 
             echo -e "\nGeoIPLookup:"
             GEOIPLOOKUP_RES=$(geoiplookup "$IP")
-            echo -e " ${GEOIPLOOKUP_RES}"
+            if ! [ -z "$(echo "$GEOIPLOOKUP_RES" | awk '{print $4}' | grep -E 'RU|CN|KP|IR|LB|YE|PS')" ];then
+                  echo -e " ${RED}${GEOIPLOOKUP_RES}${RESET}"
+            elif ! [ -z "$(echo "$GEOIPLOOKUP_RES" | awk '{print $4}' | grep -E 'IN|EG|UA')" ];then
+                  echo -e " ${YELLOW}${GEOIPLOOKUP_RES}${RESET}"
+            else
+                  echo -e " ${GEOIPLOOKUP_RES}"
+            fi
       done
 }
 
@@ -58,7 +63,13 @@ function SINGLE_IP(){
 
       echo -e "\nGeoIPLookup:"
       GEOIPLOOKUP_RES=$(geoiplookup "$IP")
-      echo -e " ${GEOIPLOOKUP_RES}"
+      if ! [ -z "$(echo "$GEOIPLOOKUP_RES" | awk '{print $4}' | grep -E 'RU|CN|KP|IR|LB|YE|PS|SY')" ];then
+            echo -e " ${RED}${GEOIPLOOKUP_RES}${RESET}"
+      elif ! [ -z "$(echo "$GEOIPLOOKUP_RES" | awk '{print $4}' | grep -E 'IN|EG|UA')" ];then
+            echo -e " ${YELLOW}${GEOIPLOOKUP_RES}${RESET}"
+      else
+            echo -e " ${GEOIPLOOKUP_RES}"
+      fi
 }
 
 if [ -f "$1" ];then
